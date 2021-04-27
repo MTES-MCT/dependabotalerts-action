@@ -1,7 +1,6 @@
 // const { graphql } = require("@octokit/graphql");
 const { Octokit } = require("@octokit/core");
 
-
 class HTTPResponseError extends Error {
   constructor(response, ...args) {
     super(`HTTP Error Response: ${response.status} ${response.statusText}`, ...args);
@@ -14,7 +13,15 @@ const throwsNon200 = (response) => {
   if (response.status >= 400)
     throw new HTTPResponseError(response);
   return response;
-}
+};
+
+const throwsErrors = (response) => {
+  if (response.data.errors && response.data.errors.length)
+    throw new Error(response.data.errors[0].message);
+  if (response.data.message === "Bad credentials")
+    throw new Error(response.data.message);
+  return response;
+};
 
 const getOwner = (repoUrl) => {
   const args = repoUrl.split('/');
@@ -35,7 +42,7 @@ const getRepo = (repoUrl) => {
  *
  * @returns {GraphQlResponse}
  */
-const alerts = (repoUrl, token) => {
+const repoAlerts = (repoUrl, token) => {
   console.warn(`Fetch Gihub dependabot alerts for ${repoUrl}`);
   const query = `query alerts($repo: String!, $owner: String!) {
     repository(name: $repo, owner: $owner) {
@@ -65,14 +72,28 @@ const alerts = (repoUrl, token) => {
     }
   }`;
   const octokit = new Octokit({ auth: token });
-  return octokit.request('POST /graphql', {
-    query: query,
-    variables: {
-      owner: getOwner(repoUrl),
-      repo: getRepo(repoUrl)
+  return octokit
+    .request("POST /graphql", {
+      query: query,
+      variables: {
+        owner: getOwner(repoUrl),
+        repo: getRepo(repoUrl),
+      },
+    })
+    .then(throwsNon200)
+    .then(throwsErrors)
+    .then((response) => response.data);
+};
+
+const alerts = async (repositories, token) => {
+  const allResults = []
+  await Promise.all(repositories.map(async repo => {
+    const results = await repoAlerts(repo, token);
+    if (results.data && results.data.repository) {
+      allResults.push(results.data.repository);
     }
-  }
-  ).then(throwsNon200).then(response => response.data);
-}
+  }))
+  return allResults;
+};
 
 module.exports = alerts;

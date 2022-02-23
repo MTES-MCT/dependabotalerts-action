@@ -3576,7 +3576,7 @@ const alerts = (repoUrl, token, maxAlerts) => {
   const query = `query alerts($repo: String!, $owner: String!, $max: Int!) {
     repository(name: $repo, owner: $owner) {
       url
-      vulnerabilityAlerts(first: $max) {
+      vulnerabilityAlerts(first: $max, states: [OPEN]) {
         totalCount
         nodes {
           dismissedAt

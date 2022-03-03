@@ -45,9 +45,10 @@ async function run() {
     const output = core.getInput("output");
     const maxAlerts = core.getInput("maxAlerts");
     const max = parseInt(maxAlerts);
+    const states= core.getInput("states");
     var repositoriesResults = [];
     await Promise.all(repositories.map(async (repo) => {
-      var results = await alerts(repo, token, max);
+      var results = await alerts(repo, token, max, states);
       repositoriesResults.push(results.repository);
     }));
     fs.writeFileSync(output, JSON.stringify(sumRepositoriesAlerts(repositoriesResults)));

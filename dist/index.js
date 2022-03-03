@@ -5755,6 +5755,12 @@ const getRepo = (repoUrl) => {
   return args.length > 1 ? args[1] : '';
 }
 
+const getStates = (statesString) => {
+  const args = statesString.split(',');
+  return args;
+}
+
+
 const computeGrade = (data) => {
   if (data && data.repository && data.repository.vulnerabilityAlerts) {
     var grade = "A";
@@ -5778,15 +5784,16 @@ const computeGrade = (data) => {
  * @param {string} repoUrl The repository url as owner/repo
  * @param {string} token The token to authenticate to Github API
  * @param {number} maxAlerts The maximum alerts to fetch
+ * @param {String} states The states to filter alerts
  *
  * @returns {GraphQlResponse}
  */
-const alerts = (repoUrl, token, maxAlerts) => {
-  console.warn(`Fetch first ${maxAlerts} Github dependabot alerts for ${repoUrl}`);
-  const query = `query alerts($repo: String!, $owner: String!, $max: Int!) {
+const alerts = (repoUrl, token, maxAlerts, states) => {
+  console.warn(`Fetch first ${maxAlerts} in ${states} states Github dependabot alerts for ${repoUrl}`);
+  const query = `query alerts($repo: String!, $owner: String!, $max: Int!, $states: [RepositoryVulnerabilityAlertState!]) {
     repository(name: $repo, owner: $owner) {
       url
-      vulnerabilityAlerts(first: $max) {
+      vulnerabilityAlerts(first: $max, states: $states) {
         totalCount
         nodes {
           dismissedAt
@@ -5816,7 +5823,8 @@ const alerts = (repoUrl, token, maxAlerts) => {
     variables: {
       owner: getOwner(repoUrl),
       repo: getRepo(repoUrl),
-      max: maxAlerts
+      max: maxAlerts,
+      states: getStates(states)
     }
   }
   ).then(throwsNon200).then(response => computeGrade(response.data.data));
@@ -6000,9 +6008,10 @@ async function run() {
     const output = core.getInput("output");
     const maxAlerts = core.getInput("maxAlerts");
     const max = parseInt(maxAlerts);
+    const states= core.getInput("states");
     var repositoriesResults = [];
     await Promise.all(repositories.map(async (repo) => {
-      var results = await alerts(repo, token, max);
+      var results = await alerts(repo, token, max, states);
       repositoriesResults.push(results.repository);
     }));
     fs.writeFileSync(output, JSON.stringify(sumRepositoriesAlerts(repositoriesResults)));

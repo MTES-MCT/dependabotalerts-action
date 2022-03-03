@@ -36,7 +36,8 @@ jobs:
           token: ${{ secrets.DEPENDABOTALERTS_TOKEN }}
           repositories: 'MTES-MCT/action-bidonvilles,MTES-MCT/partaj'
           output: dependabotalerts.json
-          maxAlerts: 20
+          maxAlerts: "20"
+          states: "OPEN,DISMISSED"
       - name: test output
         run: |
           echo $(cat dependabotalerts.json)

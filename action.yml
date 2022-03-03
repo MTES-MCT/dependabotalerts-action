@@ -13,8 +13,12 @@ inputs:
     required: true
   maxAlerts:
     description: 'Maximum alerts to fetch'
-    default: 20
+    default: "20"
     required: true
+  states:
+    description: 'Filtered by states'
+    default: "OPEN,DISMISSED"
+    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'

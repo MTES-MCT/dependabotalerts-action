@@ -18,6 +18,7 @@ jobs:
           token: ${{ secrets.DEPENDABOTALERTS_TOKEN }}
           repositories: 'MTES-MCT/dashlord,MTES-MCT/dependabotalerts-action'
           maxAlerts: 20
+          states: "OPEN,DISMISSED"
           output: dependabotalerts.json
 ```
 

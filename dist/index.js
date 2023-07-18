@@ -3453,31 +3453,30 @@ function wrappy (fn, cb) {
 // const { graphql } = require("@octokit/graphql");
 const { Octokit } = __nccwpck_require__(762);
 
-
 class HTTPResponseError extends Error {
   constructor(response, ...args) {
-    super(`HTTP Error Response: ${response.status} ${response.statusText}`, ...args);
+    super(
+      `HTTP Error Response: ${response.status} ${response.statusText}`,
+      ...args
+    );
   }
 }
 
 const throwsNon200 = (response) => {
-  if (response === undefined)
-    throw new Error("Error response undefined");
-  if (response.status >= 400)
-    throw new HTTPResponseError(response);
+  if (response === undefined) throw new Error("Error response undefined");
+  if (response.status >= 400) throw new HTTPResponseError(response);
   return response;
-}
+};
 
 const getOwner = (repoUrl) => {
-  const args = repoUrl.split('/');
-  return args.length > 0 ? args[0] : '';
-}
+  const args = repoUrl.split("/");
+  return args.length > 0 ? args[0] : "";
+};
 
 const getRepo = (repoUrl) => {
-  const args = repoUrl.split('/');
-  return args.length > 1 ? args[1] : '';
-
-}
+  const args = repoUrl.split("/");
+  return args.length > 1 ? args[1] : "";
+};
 
 /**
  * Returns alerts from Github dependabot associated to a repo url
@@ -3492,7 +3491,7 @@ const alerts = (repoUrl, token) => {
   const query = `query alerts($repo: String!, $owner: String!) {
     repository(name: $repo, owner: $owner) {
       url
-      vulnerabilityAlerts(first: 10) {
+      vulnerabilityAlerts(first: 100, states: OPEN) {
         totalCount
         nodes {
           dismissedAt
@@ -3517,17 +3516,20 @@ const alerts = (repoUrl, token) => {
     }
   }`;
   const octokit = new Octokit({ auth: token });
-  return octokit.request('POST /graphql', {
-    query: query,
-    variables: {
-      owner: getOwner(repoUrl),
-      repo: getRepo(repoUrl)
-    }
-  }
-  ).then(throwsNon200).then(response => response.data);
-}
+  return octokit
+    .request("POST /graphql", {
+      query: query,
+      variables: {
+        owner: getOwner(repoUrl),
+        repo: getRepo(repoUrl),
+      },
+    })
+    .then(throwsNon200)
+    .then((response) => response.data);
+};
 
 module.exports = alerts;
+
 
 /***/ }),
 
@@ -3650,7 +3652,6 @@ const alerts = __nccwpck_require__(341);
 async function run() {
   try {
     const repositoriesString = core.getInput("repositories");
-    // const repositories = JSON.parse(repositoriesString.toString());
     const repositories = repositoriesString.split(',');
     core.info(`Repositories JSON as ${JSON.stringify(repositories)} ...`);
     const token = core.getInput("token");
@@ -3658,9 +3659,11 @@ async function run() {
     const output = core.getInput("output");
     var allResults = [];
     await Promise.all(repositories.map(async (repo) => {
+      console.log("repo", repo)
       var results = await alerts(repo, token);
       allResults.push(results.data.repository);
     }));
+    console.log(JSON.stringify(allResults,null,2))
     fs.writeFileSync(output, JSON.stringify(allResults));
   } catch (error) {
     core.setFailed(error.message);

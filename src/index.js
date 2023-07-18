@@ -13,9 +13,11 @@ async function run() {
     const output = core.getInput("output");
     var allResults = [];
     await Promise.all(repositories.map(async (repo) => {
+      console.log("repo", repo)
       var results = await alerts(repo, token);
       allResults.push(results.data.repository);
     }));
+    console.log(JSON.stringify(allResults,null,2))
     fs.writeFileSync(output, JSON.stringify(allResults));
   } catch (error) {
     core.setFailed(error.message);
